@@ -49,6 +49,13 @@ export default class WebInterface {
     app.use(express.json());
     app.use(express.static(publicDir));
     app.use(cors(corsOptions));
+    app.use(
+      fileUpload({
+        useTempFiles: true,
+        tempFileDir: './tmp/',
+        limits: { fileSize: 50 * 1024 * 1024 },
+      }),
+    );
 
     const server = http.createServer(app);
 
@@ -69,11 +76,26 @@ export default class WebInterface {
 
     app.use('/app', express.static(appDir));
 
+    // HTTP endpoints
+    ///////////////////////////////////////////////////////////////////////////
+    app.get('/activate-source/:sourceId/:state', (req, res) => {
+      const body = { sourceId: parseInt(req.params.sourceId), state: req.params.state === 'true' };
+
+      const source = this.#sources.value.find(src => src.id === body.sourceId);
+      if (source) source.active = body.state;
+    });
+
+    app.post('/upload', (req, res) => {
+      this.loadFile(req.files.bvh.tempFilePath);
+    });
+
+    // Websocket stuff
+    ///////////////////////////////////////////////////////////////////////////
     this.#ws = new WebSocket.Server({ server });
 
-    this.#ws.on('connection', (ws) => {
+    this.#ws.on('connection', ws => {
       // listen for changes to sources list
-      this.#sources.asObservable().subscribe((sources) => {
+      this.#sources.asObservable().subscribe(sources => {
         const bytes = msgpack.serialize({ address: 'sources', args: sources });
         ws.send(bytes);
       });
@@ -90,15 +112,20 @@ export default class WebInterface {
       const port = ws._socket.remotePort;
       log.info(`⇌ WebInterface: new connection from ${addr}:${port} (${_self.#ws.clients.size})`);
 
-      ws.on('message', (m) => {
+      ws.on('message', m => {
         try {
           const result = msgpack.deserialize(m);
           log.debug(`WebInterface: received from ${addr}:${port} ${JSON.stringify(result)}`);
 
           switch (result.address) {
             case 'source/activation':
-              const source = this.#sources.value.find((src) => src.id === result.args.sourceId);
+              const source = this.#sources.value.find(src => src.id === result.args.sourceId);
               if (source) source.active = result.args.state;
+              break;
+
+            case 'source/loadfile':
+              // Create a new source from the file
+              this.loadFile(result.args.file);
               break;
           }
         } catch (err) {
@@ -106,7 +133,7 @@ export default class WebInterface {
         }
       });
 
-      ws.on('close', (m) => {
+      ws.on('close', m => {
         log.info(
           `⚡WebInterface: connection closed by ${addr}:${port} (${_self.#ws.clients.size})`,
         );
@@ -128,7 +155,7 @@ export default class WebInterface {
     /**  schema { address: string, args: [{ id: Number, data: [{ joints: [x, y, z], ... }]}]}  */
 
     /** collect all data from sources */
-    this.#sources.value.forEach((body) => {
+    this.#sources.value.forEach(body => {
       const id = body.id;
       // console.log(JSON.stringify(body.flat['RightUpLeg']));
       // console.log(JSON.stringify(body.flat['RightUpLeg'].positionAbsolute));
@@ -140,14 +167,14 @@ export default class WebInterface {
     const bytes = msgpack.serialize(packet);
 
     /** send data to all connected clients */
-    this.#ws.clients.forEach((client) => {
+    this.#ws.clients.forEach(client => {
       client.send(bytes);
     });
   }
 
   static getJsonFor(theBody, theRange) {
     const data = {};
-    theRange.forEach((el) => {
+    theRange.forEach(el => {
       const joint = theBody.flat[el];
       if (joint !== undefined) {
         data[el] = joint.positionAbsolute.xyz;
@@ -157,6 +184,15 @@ export default class WebInterface {
       }
     });
     return data;
+  }
+
+  loadFile(file) {
+    BvhParser.readFile({ file, id: 99 }).then(body => {
+      body.mode = BvhBody.MODE_PLAYBACK;
+      const f = file.split('/').pop();
+      log.info(`✓ GoldStreamer loaded a file ${f}`);
+      this.#sources.next([...this.#sources.value, body]);
+    });
   }
 
   #ws;

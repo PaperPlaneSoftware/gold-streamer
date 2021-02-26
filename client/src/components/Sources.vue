@@ -62,12 +62,9 @@ export default defineComponent({
   setup(props) {
     function activateSource(stream) {
       stream.active = !stream.active;
-      this.$ws.send(
-        msgpack.serialize({
-          address: 'source/activation',
-          args: { sourceId: stream.id, state: stream.active },
-        }),
-      );
+      axios
+        .get(`${BASE_URL}/activate-source/${stream.id}/${stream.active}`)
+        .catch(err => console.log(err));
     }
 
     const streamsRes = {
@@ -79,12 +76,9 @@ export default defineComponent({
     const file: Ref<File | null> = ref(null);
 
     function upload() {
-      console.log(file.value);
       if (file.value !== undefined) {
-        let formData = new FormData();
+        const formData = new FormData();
         formData.append('bvh', file.value);
-
-        console.log(formData);
 
         axios
           .post(`${BASE_URL}/upload`, formData, {
