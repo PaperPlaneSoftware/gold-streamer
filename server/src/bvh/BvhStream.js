@@ -40,7 +40,7 @@ export default class BvhStream {
       // check if this is a known source
       const source = this.#sources.value.find((src) => src.address === rinfo.address);
       if (source) {
-        if (source.active) this.parseBuffer(msg, rinfo.address);
+        this.parseBuffer(msg, rinfo.address);
         return;
       }
 
@@ -50,7 +50,7 @@ export default class BvhStream {
           body.id = this.#sources.value.length + 1;
           body.address = rinfo.address;
           body.mode = BvhBody.MODE_STREAM;
-          body.active = false;
+          body.type = BvhBody.type.BVH_STREAM;
           this.#sources.next([...this.#sources.value, body]);
         })
         .catch((err) => console.log(err));

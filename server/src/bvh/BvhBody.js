@@ -4,7 +4,8 @@ import BvhConstants from './BvhConstants.js';
 export default class BvhBody {
   constructor(theId) {
     this.id = theId;
-    this.address = '127.0.0.1';
+    this.address = '127.0.0.1'; // todo: rename to something like 'name' (can this be set in the constructor?)
+    this.type = BvhBody.type.BVH_FILE;
     this.#owner = BvhBody.owner.SELF;
     this.#mode = BvhBody.MODE_IDLE;
 
@@ -15,6 +16,7 @@ export default class BvhBody {
     this.#flat = [];
 
     /** frames */
+    this.#frameIndex = 0;
     this.#nbFrames = 0;
     this.#frameTime = 0;
     this.#currentFrame = 0;
@@ -32,6 +34,13 @@ export default class BvhBody {
    */
 
   update() {
+    switch (this.type) {
+      case BvhBody.type.BVH_FILE:
+        this.#frameIndex += 4; // todo: we need a setting for this (is this in the bvh file?)
+        this.#currentFrame = this.#frameIndex % this.#nbFrames;
+        break;
+    }
+
     if (this.#owner === BvhBody.owner.SELF) {
       if (this.mode === BvhBody.MODE_PLAYBACK) {
         if (this.#play) {
@@ -205,7 +214,7 @@ export default class BvhBody {
   }
 
   pause() {
-    // TODO
+    this.#play = false;
   }
 
   jumpTo(theFrame) {
@@ -301,6 +310,7 @@ export default class BvhBody {
   #center;
   #currentFrame;
   #flat;
+  #frameIndex;
   #frameTime;
   #id;
   #mode;
@@ -316,5 +326,10 @@ export default class BvhBody {
   static owner = {
     SELF: 0,
     OTHER: 1,
+  };
+
+  static type = {
+    BVH_FILE: 0,
+    BVH_STREAM: 1,
   };
 }
