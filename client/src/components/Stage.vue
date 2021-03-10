@@ -43,23 +43,23 @@ export default defineComponent({
           nry = 0,
           nx = 0,
           ny = 100,
-          nz = 0;
+          nz = 100;
 
         g.preload = () => {
           font = g.loadFont('./fonts/SourceCodePro-Medium.otf');
         };
 
         g.setup = () => {
-          g.createCanvas(
-            sketchTemplate.value?.clientWidth ?? 0,
-            sketchTemplate.value?.clientHeight ?? 0,
-            g.WEBGL,
-          );
-          connectAxis({ target: updateAxisData });
-          g.noStroke();
-          g.textFont(font);
-          g.textSize(24);
-          g.textAlign(g.CENTER, g.CENTER);
+          // g.createCanvas(
+          //   sketchTemplate.value?.clientWidth ?? 0,
+          //   sketchTemplate.value?.clientHeight ?? 0,
+          //   g.WEBGL,
+          // );
+          // connectAxis({ target: updateAxisData });
+          // g.noStroke();
+          // g.textFont(font);
+          // g.textSize(24);
+          // g.textAlign(g.CENTER, g.CENTER);
         };
 
         g.draw = () => {
@@ -131,23 +131,23 @@ export default defineComponent({
           });
         };
 
-        g.mouseDragged = evt => {
-          if (isMove) {
-            // move along x and y axis
-            nx += g.mouseX - g.pmouseX;
-            ny += g.mouseY - g.pmouseY;
-          } else {
-            // rotate around Y-axis
-            nry += (g.mouseX - g.pmouseX) * 0.02;
-          }
-        };
+        // g.mouseDragged = evt => {
+        //   if (isMove) {
+        //     // move along x and y axis
+        //     nx += g.mouseX - g.pmouseX;
+        //     ny += g.mouseY - g.pmouseY;
+        //   } else {
+        //     // rotate around Y-axis
+        //     nry += (g.mouseX - g.pmouseX) * 0.02;
+        //   }
+        // };
 
         //@ts-ignore
-        g.mouseWheel = evt => {
-          // event.preventDefault();
-          nz += evt.delta;
-          return false;
-        };
+        // g.mouseWheel = evt => {
+        //   evt.preventDefault();
+        //   nz += evt.delta;
+        //   return false;
+        // };
 
         g.keyPressed = () => {
           /* check if Shift (keyCode 16) key is pressed

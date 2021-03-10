@@ -114,9 +114,11 @@ export default function useStage(el: HTMLElement, body: Object) {
 
     //@ts-ignore
     g.mouseWheel = evt => {
-      // event.preventDefault();
-      nz += evt.delta;
-      return false;
+      if (mouseOver) {
+        // evt.preventDefault();
+        nz += evt.delta;
+        // return true;
+      }
     };
 
     g.keyPressed = () => {
@@ -173,6 +175,10 @@ export default function useStage(el: HTMLElement, body: Object) {
   }
 
   const myp5 = new p5(sketch, el);
+
+  let mouseOver = false;
+  el.onmouseleave = () => (mouseOver = false);
+  el.onmouseenter = () => (mouseOver = true);
 
   return { target: updateAxisData };
 }

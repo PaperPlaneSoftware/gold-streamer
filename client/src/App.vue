@@ -1,18 +1,48 @@
 <template>
   <div id="app">
-    <settings-component :settingsProperty="settingsObject" />
-    <sources :streams.sync="streams" />
-    <!-- <stage id="stage" :body.sync="body" /> -->
+    <!-- <settings-component :settingsProperty="settingsObject" /> -->
+    <!-- <sources :streams.sync="streams" /> -->
+
+    <b-sidebar bg-variant="dark" :width="sidebarWidth" visible no-header>
+      <div class="mx-0 my-5">
+        <b-button block squared variant="primary" v-b-toggle.settings-collapse>
+          <b-icon :class="{ 'float-left': isExpanded }" icon="card-list" />
+          <span v-if="isExpanded"> SETTINGS</span>
+        </b-button>
+        <b-collapse id="settings-collapse" class="p-2">
+          <div class="text-white"></div>
+        </b-collapse>
+
+        <b-button block squared variant="primary" v-b-toggle.sources-collapse>
+          <b-icon :class="{ 'float-left': isExpanded }" icon="box-arrow-in-right" />
+          <span v-if="isExpanded"> SOURCES</span>
+        </b-button>
+        <b-collapse id="sources-collapse" class="p-2">
+          <div class="text-white"></div>
+        </b-collapse>
+
+        <b-button block squared variant="primary">
+          <b-icon :class="{ 'float-left': isExpanded }" icon="broadcast-pin" />
+          <span v-if="isExpanded"> BROADCAST</span>
+        </b-button>
+      </div>
+
+      <template #footer="{ hide }">
+        <b-button block squared variant="primary" @click="() => (isExpanded = !isExpanded)">
+          <b-icon :icon="`chevron-double-${isExpanded ? 'left' : 'right'}`" />
+        </b-button>
+      </template>
+    </b-sidebar>
 
     <!-- Stage -->
-    <div id="stage" class="d-flex justify-content-center align-items-center h-100">
+    <div id="stage" class="d-flex justify-content-center align-items-center h-100" @mouseleave="">
       <div id="sketch" ref="sketchTemplate" />
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted, ref, Ref } from '@vue/composition-api';
+import { computed, defineComponent, onMounted, ref, Ref } from '@vue/composition-api';
 import SettingsComponent from './components/Settings.vue';
 import Stage from './components/Stage.vue';
 import Sources from './components/Sources.vue';
@@ -30,7 +60,6 @@ export default defineComponent({
     const sketchTemplate: Ref<HTMLElement | undefined> = ref(undefined);
     const streams = ref([]);
     const settingsObject: Ref<Object | undefined> = ref(undefined);
-
 
     onMounted(() => {
       // stage stuff
@@ -85,10 +114,19 @@ export default defineComponent({
       };
     });
 
+    const isExpanded = ref(false);
+    const sidebarWidth = computed(() => (isExpanded.value ? '300px' : '100px'));
+    const sidebar = {
+      isExpanded,
+      sidebarWidth,
+    };
+
     return {
       streams,
       sketchTemplate,
-      settingsObject
+      settingsObject,
+
+      ...sidebar,
     };
   },
 });
@@ -96,9 +134,6 @@ export default defineComponent({
 
 <style lang="scss">
 @import 'assets/scss/custom.scss';
-
-#app {
-}
 
 #stage {
   position: absolute;
