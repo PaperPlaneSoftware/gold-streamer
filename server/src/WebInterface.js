@@ -25,6 +25,7 @@ import cors from 'cors';
 import fileUpload from 'express-fileupload';
 import msgpack from '@ygoe/msgpack';
 import WebSocket from 'ws';
+import fs from 'fs';
 
 export default class WebInterface {
   #settings;
@@ -91,6 +92,13 @@ export default class WebInterface {
     app.post('/upload', (req, res) => {
       const filename = req.files.bvh.name;
       this.loadFile(req.files.bvh.tempFilePath, filename);
+
+      try {
+        log.info(`⇌ WebInterface: Cleaning up temp file ${req.files.bvh.tempFilePath}`);
+        fs.unlinkSync(req.files.bvh.tempFilePath);
+      } catch (ex) {
+        log.error(`⇌ WebInterface: Error cleaning up temp file ${req.files.bvh.tempFilePath}`);
+      }
     });
 
     // Websocket stuff
@@ -166,7 +174,8 @@ export default class WebInterface {
   }
 
   loadFile(file, filename) {
-    BvhParser.readFile({ file, id: 99 }).then((body) => {
+    const id = this.#sources.value.length + 1;
+    BvhParser.readFile({ file, id }).then((body) => {
       body.mode = BvhBody.MODE_PLAYBACK;
       body.type = BvhBody.type.BVH_FILE;
       body.address = filename;

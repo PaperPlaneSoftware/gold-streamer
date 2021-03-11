@@ -1,41 +1,49 @@
 <template>
   <div id="app">
-    <!-- <settings-component :settingsProperty="settingsObject" /> -->
-    <!-- <sources :streams.sync="streams" /> -->
-
-    <b-sidebar bg-variant="dark" :width="sidebarWidth" visible no-header>
+    <!-- -------- SIDEBAR -------- -->
+    <b-sidebar bg-variant="dark my-sidebar" :width="sidebarWidth" visible no-header-close>
+      <template #header="">
+        <h4 class="mx-auto">💃🕺</h4>
+      </template>
       <div class="mx-0 my-5">
         <b-button block squared variant="primary" v-b-toggle.settings-collapse>
-          <b-icon :class="{ 'float-left': isExpanded }" icon="card-list" />
-          <span v-if="isExpanded"> SETTINGS</span>
+          <b-icon :class="{ 'float-left': isSidebarExpanded }" icon="card-list" />
+          <span v-if="isSidebarExpanded"> SETTINGS</span>
         </b-button>
-        <b-collapse id="settings-collapse" class="p-2">
-          <div class="text-white"></div>
+        <b-collapse id="settings-collapse" class="p-2" v-model="isSettingsExpanded">
+          <div class="text-white">
+            <settings v-show="isSettingsExpanded" :settings="settingsObject" />
+          </div>
         </b-collapse>
 
         <b-button block squared variant="primary" v-b-toggle.sources-collapse>
-          <b-icon :class="{ 'float-left': isExpanded }" icon="box-arrow-in-right" />
-          <span v-if="isExpanded"> SOURCES</span>
+          <b-icon :class="{ 'float-left': isSidebarExpanded }" icon="box-arrow-in-right" />
+          <span v-if="isSidebarExpanded"> SOURCES</span>
         </b-button>
-        <b-collapse id="sources-collapse" class="p-2">
-          <div class="text-white"></div>
+        <b-collapse id="sources-collapse" class="p-2" v-model="isSourcesExpanded">
+          <div class="text-white">
+            <sources v-show="isSourcesExpanded" :streams.sync="streams" />
+          </div>
         </b-collapse>
 
-        <b-button block squared variant="primary">
-          <b-icon :class="{ 'float-left': isExpanded }" icon="broadcast-pin" />
-          <span v-if="isExpanded"> BROADCAST</span>
+        <b-button block squared variant="primary" v-b-toggle.broadcast-collapse>
+          <b-icon :class="{ 'float-left': isSidebarExpanded }" icon="broadcast-pin" />
+          <span v-if="isSidebarExpanded"> BROADCAST</span>
         </b-button>
+        <b-collapse id="broadcast-collapse" class="p-2" v-model="isBroadcastExpanded">
+          <div class="text-white"></div>
+        </b-collapse>
       </div>
 
       <template #footer="{ hide }">
-        <b-button block squared variant="primary" @click="() => (isExpanded = !isExpanded)">
-          <b-icon :icon="`chevron-double-${isExpanded ? 'left' : 'right'}`" />
+        <b-button block squared variant="primary" @click="toggleSidebar">
+          <b-icon :icon="`chevron-double-${isSidebarExpanded ? 'left' : 'right'}`" />
         </b-button>
       </template>
     </b-sidebar>
 
-    <!-- Stage -->
-    <div id="stage" class="d-flex justify-content-center align-items-center h-100" @mouseleave="">
+    <!-- -------- STAGE -------- -->
+    <div id="stage" class="d-flex justify-content-center align-items-center h-100">
       <div id="sketch" ref="sketchTemplate" />
     </div>
   </div>
@@ -43,16 +51,14 @@
 
 <script lang="ts">
 import { computed, defineComponent, onMounted, ref, Ref } from '@vue/composition-api';
-import SettingsComponent from './components/Settings.vue';
-import Stage from './components/Stage.vue';
+import Settings from './components/Settings.vue';
 import Sources from './components/Sources.vue';
 import msgpack from '@ygoe/msgpack';
 import useStage from './hooks/useStage';
 
 export default defineComponent({
   components: {
-    SettingsComponent,
-    Stage,
+    Settings,
     Sources,
   },
 
@@ -95,16 +101,11 @@ export default defineComponent({
         const { address, args } = packet;
         switch (address) {
           case 'pn':
-            args.forEach(el => {
-              target(el);
-            });
+            args.forEach(target);
             break;
 
           case 'settings':
             settingsObject.value = args;
-            console.log(args.general);
-            // document.getElementById('settings-label').innerHTML = args.label;
-            // document.getElementById('settings-json').innerHTML = JSON.stringify(args.broadcast, null, 2);
             break;
 
           case 'sources':
@@ -114,11 +115,31 @@ export default defineComponent({
       };
     });
 
-    const isExpanded = ref(false);
-    const sidebarWidth = computed(() => (isExpanded.value ? '300px' : '100px'));
+    const isSidebarExpanded = computed(() => {
+      return isSettingsExpanded.value || isSourcesExpanded.value || isBroadcastExpanded.value;
+    });
+    const isSettingsExpanded = ref(false);
+    const isSourcesExpanded = ref(false);
+    const isBroadcastExpanded = ref(false);
+
+    const sidebarWidth = computed(() => (isSidebarExpanded.value ? '300px' : '100px'));
+    function toggleSidebar() {
+      if (isSidebarExpanded.value) {
+        isSettingsExpanded.value = false;
+        isSourcesExpanded.value = false;
+        isBroadcastExpanded.value = false;
+      } else {
+        isSourcesExpanded.value = true;
+      }
+    }
+
     const sidebar = {
-      isExpanded,
+      isSidebarExpanded,
+      isSettingsExpanded,
+      isSourcesExpanded,
+      isBroadcastExpanded,
       sidebarWidth,
+      toggleSidebar,
     };
 
     return {
@@ -150,5 +171,9 @@ export default defineComponent({
 
     background-color: black;
   }
+}
+
+.my-sidebar {
+  border-right: 2px solid $secondary;
 }
 </style>
